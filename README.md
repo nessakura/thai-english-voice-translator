@@ -1,6 +1,3 @@
-# thai-english-voice-translator
-//thai-english-voice-translator
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
