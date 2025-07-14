@@ -1,9 +1,8 @@
-
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแปลภาษาไทยเป็นอังกฤษด้วยเสียง (Gemini AI)</title>
+    <title>ระบบแปลภาษา (ไทย ↔ อังกฤษ) ด้วยเสียง (Gemini AI)</title>
     <link rel="icon" href="https://makubtrader.com/ccdc/Favicon.png" type="image/png" sizes="16x16">
     <link rel="icon" href="https://makubtrader.com/ccdc/Favicon.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="https://makubtrader.com/ccdc/Favicon.png">
@@ -389,7 +388,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎤 ระบบแปลภาษาไทยเป็นอังกฤษ</h1>
+        <h1>🎤 ระบบแปลภาษา (ไทย ↔ อังกฤษ)</h1>
         
         <div class="api-setup" id="apiSetupSection">
             <h2><span class="icon">🔑</span> ตั้งค่า Gemini API Key</h2>
@@ -423,97 +422,136 @@
         </div>
 
         <div class="section">
-            <h2><span class="icon">🎙️</span> การบันทึกเสียง</h2>
+            <h2><span class="icon">🇹🇭➡️🇺🇸</span> ไทย ➡️ อังกฤษ</h2>
             <div class="voice-controls">
-                <button class="btn btn-primary" id="startBtn" disabled>
-                    <span>🎤</span> เริ่มบันทึกเสียง
+                <button class="btn btn-primary" id="startThaiBtn" disabled>
+                    <span>🎤</span> เริ่มพูด (ไทย)
                 </button>
-                <button class="btn btn-danger" id="stopBtn" disabled>
+                <button class="btn btn-danger" id="stopThaiBtn" disabled>
                     <span>⏹️</span> หยุดบันทึก
                 </button>
-                <button class="btn btn-success" id="clearBtn">
-                    <span>🗑️</span> ล้างข้อมูล
+                <button class="btn btn-success" id="clearAllBtn">
+                    <span>🗑️</span> ล้างข้อมูลทั้งหมด
                 </button>
             </div>
             <div class="status" id="status">กรุณาใส่ Gemini API Key ก่อนใช้งาน</div>
-        </div>
-
-        <div class="section">
-            <h2><span class="icon">🇹🇭</span> ข้อความภาษาไทย</h2>
-            <textarea id="thaiText" placeholder="พิมพ์ข้อความภาษาไทยหรือใช้การบันทึกเสียง..."></textarea>
-            <button class="btn btn-primary translate-btn" id="translateBtn" disabled>
+            
+            <h3>ข้อความภาษาไทย:</h3>
+            <textarea id="thaiText" placeholder="พูดหรือพิมพ์ข้อความภาษาไทย..."></textarea>
+            <button class="btn btn-primary translate-btn" id="translateThaiToEnglishBtn" disabled>
                 <span>🔄</span> แปลเป็นภาษาอังกฤษ
             </button>
-        </div>
-
-        <div class="section result-section">
-            <h2><span class="icon">🇺🇸</span> ผลการแปล (ภาษาอังกฤษ)</h2>
+            
+            <h3 style="margin-top: 20px;">ผลการแปล (ภาษาอังกฤษ):</h3>
             <textarea id="englishText" placeholder="ผลการแปลจะแสดงที่นี่..." readonly></textarea>
             <button class="btn btn-info translate-btn" id="listenEnglishBtn" disabled>
                 <span>🔊</span> อ่านออกเสียง (อังกฤษ)
             </button>
         </div>
+
+        <div class="section result-section">
+            <h2><span class="icon">🇺🇸➡️🇹🇭</span> อังกฤษ ➡️ ไทย</h2>
+            <div class="voice-controls">
+                <button class="btn btn-info" id="startEnglishBtn" disabled>
+                    <span>🎙️</span> เริ่มพูด (อังกฤษ)
+                </button>
+                <button class="btn btn-danger" id="stopEnglishBtn" disabled>
+                    <span>⏹️</span> หยุดบันทึก
+                </button>
+            </div>
+            
+            <h3>ข้อความภาษาอังกฤษ:</h3>
+            <textarea id="englishListenText" placeholder="พูดหรือพิมพ์ข้อความภาษาอังกฤษ..."></textarea>
+            <button class="btn btn-primary translate-btn" id="translateEnglishToThaiBtn" disabled>
+                <span>🔄</span> แปลเป็นภาษาไทย
+            </button>
+            
+            <h3 style="margin-top: 20px;">ผลการแปล (ภาษาไทย):</h3>
+            <textarea id="thaiTranslatedText" placeholder="ผลการแปลจะแสดงที่นี่..." readonly></textarea>
+            <button class="btn btn-success translate-btn" id="listenThaiBtn" disabled>
+                <span>🔊</span> อ่านออกเสียง (ไทย)
+            </button>
+        </div>
     </div>
 
     <script>
-        class ThaiVoiceTranslator {
+        class BiDirectionalVoiceTranslator {
             constructor() {
-                this.recognition = null;
-                this.isRecording = false;
+                this.recognitionThai = null;
+                this.recognitionEnglish = null;
+                this.isRecordingThai = false;
+                this.isRecordingEnglish = false;
                 this.geminiApiKey = localStorage.getItem('geminiApiKey') || '';
-                this.speechSynthesisUtterance = null;
+                this.speechSynthesisUtterance = null; // For en-US voice
+                this.speechSynthesisUtteranceThai = null; // For th-TH voice
 
                 this.initializeElements();
-                this.setupSpeechRecognition();
+                this.setupSpeechRecognitions();
                 this.setupEventListeners();
                 this.checkApiKeyStatus();
             }
 
             initializeElements() {
-                this.apiSetupSection = document.getElementById('apiSetupSection'); // ส่วน API Key ทั้งหมด
+                this.apiSetupSection = document.getElementById('apiSetupSection');
                 this.apiKeyInput = document.getElementById('apiKeyInput');
                 this.saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
                 this.removeApiKeyBtn = document.getElementById('removeApiKeyBtn');
-                this.apiKeyStatusDisplay = document.getElementById('apiKeyStatusDisplay'); // สถานะที่แสดงแทนส่วน API Key
+                this.apiKeyStatusDisplay = document.getElementById('apiKeyStatusDisplay');
 
-                this.startBtn = document.getElementById('startBtn');
-                this.stopBtn = document.getElementById('stopBtn');
-                this.clearBtn = document.getElementById('clearBtn');
-                this.translateBtn = document.getElementById('translateBtn');
-                this.listenEnglishBtn = document.getElementById('listenEnglishBtn');
+                // Thai to English elements
+                this.startThaiBtn = document.getElementById('startThaiBtn');
+                this.stopThaiBtn = document.getElementById('stopThaiBtn');
+                this.clearAllBtn = document.getElementById('clearAllBtn');
                 this.statusDiv = document.getElementById('status');
                 this.thaiText = document.getElementById('thaiText');
+                this.translateThaiToEnglishBtn = document.getElementById('translateThaiToEnglishBtn');
                 this.englishText = document.getElementById('englishText');
+                this.listenEnglishBtn = document.getElementById('listenEnglishBtn');
+
+                // English to Thai elements
+                this.startEnglishBtn = document.getElementById('startEnglishBtn');
+                this.stopEnglishBtn = document.getElementById('stopEnglishBtn');
+                this.englishListenText = document.getElementById('englishListenText');
+                this.translateEnglishToThaiBtn = document.getElementById('translateEnglishToThaiBtn');
+                this.thaiTranslatedText = document.getElementById('thaiTranslatedText');
+                this.listenThaiBtn = document.getElementById('listenThaiBtn');
             }
 
             checkApiKeyStatus() {
                 if (this.geminiApiKey) {
-                    this.apiSetupSection.style.display = 'none'; // ซ่อนส่วน API Key
-                    this.apiKeyStatusDisplay.style.display = 'flex'; // แสดงสถานะ API Key
-                    this.updateStatus('พร้อมใช้งาน! กดปุ่ม "เริ่มบันทึกเสียง" เพื่อเริ่มต้น', 'success');
+                    this.apiSetupSection.style.display = 'none';
+                    this.apiKeyStatusDisplay.style.display = 'flex';
+                    this.updateStatus('พร้อมใช้งาน! เลือกโหมดที่ต้องการ', 'success');
                     this.enableAllFeatures();
                 } else {
-                    this.apiSetupSection.style.display = 'block'; // แสดงส่วน API Key
+                    this.apiSetupSection.style.display = 'block';
                     this.apiKeyInput.value = '';
                     this.apiKeyInput.disabled = false;
                     this.saveApiKeyBtn.style.display = 'inline-block';
                     this.removeApiKeyBtn.style.display = 'none';
-                    this.apiKeyStatusDisplay.style.display = 'none'; // ซ่อนสถานะ API Key
+                    this.apiKeyStatusDisplay.style.display = 'none';
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     this.disableAllFeatures();
                 }
             }
 
             enableAllFeatures() {
-                this.startBtn.disabled = false;
-                this.updateTranslateButtonState();
+                this.startThaiBtn.disabled = false;
+                this.startEnglishBtn.disabled = false;
+                this.updateTranslateButtonStates();
+                this.updateListenButtonStates();
             }
 
             disableAllFeatures() {
-                this.startBtn.disabled = true;
-                this.translateBtn.disabled = true;
-                this.stopBtn.disabled = true;
+                this.startThaiBtn.disabled = true;
+                this.stopThaiBtn.disabled = true;
+                this.translateThaiToEnglishBtn.disabled = true;
                 this.listenEnglishBtn.disabled = true;
+
+                this.startEnglishBtn.disabled = true;
+                this.stopEnglishBtn.disabled = true;
+                this.translateEnglishToThaiBtn.disabled = true;
+                this.listenThaiBtn.disabled = true;
             }
 
             saveApiKey() {
@@ -522,16 +560,14 @@
                     alert('กรุณาใส่ Gemini API Key ก่อนบันทึก');
                     return;
                 }
-                
-                // Basic validation for API key length
-                if (inputKey.length < 20 || !inputKey.startsWith('AIza')) { // Common prefix for Google API keys
+                if (inputKey.length < 20 || !inputKey.startsWith('AIza')) {
                     alert('API Key ดูเหมือนจะไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง (เช่น: AIzaSyC...)');
                     return;
                 }
 
                 this.geminiApiKey = inputKey;
                 localStorage.setItem('geminiApiKey', this.geminiApiKey);
-                this.checkApiKeyStatus(); // เรียกเพื่อซ่อนส่วน API Key
+                this.checkApiKeyStatus();
                 this.updateStatus('บันทึก API Key เรียบร้อย! พร้อมใช้งาน', 'success');
             }
 
@@ -539,40 +575,39 @@
                 if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ API Key?')) {
                     localStorage.removeItem('geminiApiKey');
                     this.geminiApiKey = '';
-                    this.checkApiKeyStatus(); // เรียกเพื่อแสดงส่วน API Key อีกครั้ง
+                    this.checkApiKeyStatus();
                     this.clearAll();
                     this.updateStatus('ลบ API Key เรียบร้อย กรุณาใส่ API Key ใหม่', 'info');
                 }
             }
 
-            setupSpeechRecognition() {
+            setupSpeechRecognitions() {
                 if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                     this.updateStatus('เบราว์เซอร์ของคุณไม่รองรับการรู้จำเสียง โปรดใช้ Chrome หรือ Edge', 'error');
                     return;
                 }
 
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                this.recognition = new SpeechRecognition();
-                
-                this.recognition.continuous = true;
-                this.recognition.interimResults = true;
-                this.recognition.lang = 'th-TH'; // ตั้งค่าภาษาเป็นภาษาไทย
 
-                this.recognition.onstart = () => {
-                    this.isRecording = true;
-                    this.updateStatus('กำลังฟัง... <span class="wave-animation"></span>', 'listening');
-                    this.startBtn.disabled = true;
-                    this.stopBtn.disabled = false;
-                    this.startBtn.classList.add('recording');
-                    this.thaiText.value = ''; // เคลียร์ข้อความเก่าเมื่อเริ่มบันทึกใหม่
-                    this.englishText.value = ''; // เคลียร์ผลแปลเก่าด้วย
-                    this.updateListenButtonState(); // อัปเดตสถานะปุ่มอ่านออกเสียง
+                // Thai Recognition
+                this.recognitionThai = new SpeechRecognition();
+                this.recognitionThai.continuous = true;
+                this.recognitionThai.interimResults = true;
+                this.recognitionThai.lang = 'th-TH';
+
+                this.recognitionThai.onstart = () => {
+                    this.isRecordingThai = true;
+                    this.updateStatus('กำลังฟัง (ไทย)... <span class="wave-animation"></span>', 'listening');
+                    this.startThaiBtn.disabled = true;
+                    this.stopThaiBtn.disabled = false;
+                    this.startThaiBtn.classList.add('recording');
+                    this.thaiText.value = '';
+                    this.englishText.value = '';
+                    this.updateListenButtonStates();
                 };
-
-                this.recognition.onresult = (event) => {
+                this.recognitionThai.onresult = (event) => {
                     let finalTranscript = '';
                     let interimTranscript = '';
-
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         const transcript = event.results[i][0].transcript;
                         if (event.results[i].isFinal) {
@@ -581,37 +616,84 @@
                             interimTranscript += transcript;
                         }
                     }
-
                     this.thaiText.value = finalTranscript + interimTranscript;
-                    
                     if (finalTranscript) {
-                        this.updateStatus('พบข้อความแล้ว กำลังรอให้คุณพูดจบ...', 'success');
+                        this.updateStatus('พบข้อความไทยแล้ว กำลังรอให้คุณพูดจบ...', 'success');
                     }
-                    this.updateTranslateButtonState();
+                    this.updateTranslateButtonStates();
                 };
-
-                this.recognition.onerror = (event) => {
-                    let errorMessage = 'เกิดข้อผิดพลาดในการรู้จำเสียง';
-                    if (event.error === 'no-speech') {
-                        errorMessage = 'ไม่พบเสียงพูด';
-                    } else if (event.error === 'not-allowed') {
-                        errorMessage = 'ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาอนุญาตในเบราว์เซอร์';
-                    } else if (event.error === 'aborted') {
-                        errorMessage = 'การบันทึกเสียงถูกยกเลิก';
-                    }
-                    this.updateStatus(errorMessage, 'error');
-                    this.stopRecording();
+                this.recognitionThai.onerror = (event) => {
+                    this.handleRecognitionError(event, 'ไทย');
+                    this.stopRecordingThai();
                 };
-
-                this.recognition.onend = () => {
-                    this.stopRecording();
+                this.recognitionThai.onend = () => {
+                    this.stopRecordingThai();
                     if (this.thaiText.value.trim()) {
-                        this.updateStatus('บันทึกเสียงเสร็จสิ้น กำลังแปลภาษา...', 'processing'); // อัปเดตสถานะก่อนแปล
-                        this.translateText(); // เรียกฟังก์ชันแปลภาษาอัตโนมัติ
-                    } else { // หากไม่มีข้อความจากการบันทึกเสียง
-                        this.updateStatus('กดปุ่ม "เริ่มบันทึกเสียง" เพื่อเริ่มต้น', 'info');
+                        this.updateStatus('บันทึกเสียงไทยเสร็จสิ้น กำลังแปลภาษา...', 'processing');
+                        this.translateThaiToEnglish();
+                    } else {
+                        this.updateStatus('กดปุ่ม "เริ่มพูด (ไทย)" เพื่อเริ่มต้น', 'info');
                     }
                 };
+
+                // English Recognition
+                this.recognitionEnglish = new SpeechRecognition();
+                this.recognitionEnglish.continuous = true;
+                this.recognitionEnglish.interimResults = true;
+                this.recognitionEnglish.lang = 'en-US';
+
+                this.recognitionEnglish.onstart = () => {
+                    this.isRecordingEnglish = true;
+                    this.updateStatus('กำลังฟัง (อังกฤษ)... <span class="wave-animation"></span>', 'listening');
+                    this.startEnglishBtn.disabled = true;
+                    this.stopEnglishBtn.disabled = false;
+                    this.startEnglishBtn.classList.add('recording');
+                    this.englishListenText.value = '';
+                    this.thaiTranslatedText.value = '';
+                    this.updateListenButtonStates();
+                };
+                this.recognitionEnglish.onresult = (event) => {
+                    let finalTranscript = '';
+                    let interimTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    this.englishListenText.value = finalTranscript + interimTranscript;
+                    if (finalTranscript) {
+                        this.updateStatus('พบข้อความอังกฤษแล้ว กำลังรอให้คุณพูดจบ...', 'success');
+                    }
+                    this.updateTranslateButtonStates();
+                };
+                this.recognitionEnglish.onerror = (event) => {
+                    this.handleRecognitionError(event, 'อังกฤษ');
+                    this.stopRecordingEnglish();
+                };
+                this.recognitionEnglish.onend = () => {
+                    this.stopRecordingEnglish();
+                    if (this.englishListenText.value.trim()) {
+                        this.updateStatus('บันทึกเสียงอังกฤษเสร็จสิ้น กำลังแปลภาษา...', 'processing');
+                        this.translateEnglishToThai();
+                    } else {
+                        this.updateStatus('กดปุ่ม "เริ่มพูด (อังกฤษ)" เพื่อเริ่มต้น', 'info');
+                    }
+                };
+            }
+
+            handleRecognitionError(event, lang) {
+                let errorMessage = `เกิดข้อผิดพลาดในการรู้จำเสียง (${lang})`;
+                if (event.error === 'no-speech') {
+                    errorMessage = `ไม่พบเสียงพูด (${lang})`;
+                } else if (event.error === 'not-allowed') {
+                    errorMessage = `ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาอนุญาตในเบราว์เซอร์ (${lang})`;
+                } else if (event.error === 'aborted') {
+                    errorMessage = `การบันทึกเสียงถูกยกเลิก (${lang})`;
+                }
+                this.updateStatus(errorMessage, 'error');
             }
 
             setupEventListeners() {
@@ -620,153 +702,168 @@
                 this.apiKeyInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') this.saveApiKey();
                 });
-                // เพิ่ม Event Listener สำหรับการคลิกที่สถานะ API Key
                 this.apiKeyStatusDisplay.addEventListener('click', () => {
-                    this.apiSetupSection.style.display = 'block'; // แสดงส่วน API Key
-                    this.apiKeyStatusDisplay.style.display = 'none'; // ซ่อนสถานะ API Key
-                    this.apiKeyInput.value = this.geminiApiKey; // แสดง key เต็มๆ ในช่อง input
+                    this.apiSetupSection.style.display = 'block';
+                    this.apiKeyStatusDisplay.style.display = 'none';
+                    this.apiKeyInput.value = this.geminiApiKey;
                     this.apiKeyInput.disabled = false;
                     this.saveApiKeyBtn.style.display = 'inline-block';
                     this.removeApiKeyBtn.style.display = 'inline-block';
-                    this.apiKeyInput.focus(); // ให้ cursor ไปที่ input เพื่อแก้ไขได้เลย
+                    this.apiKeyInput.focus();
                     this.updateStatus('คุณกำลังแก้ไข API Key', 'info');
-                    this.disableAllFeatures(); // ปิดการใช้งานอื่นๆ ชั่วคราว
+                    this.disableAllFeatures();
                 });
                 
-                this.startBtn.addEventListener('click', () => this.startRecording());
-                this.stopBtn.addEventListener('click', () => this.stopRecording());
-                this.clearBtn.addEventListener('click', () => this.clearAll());
-                this.translateBtn.addEventListener('click', () => this.translateText());
+                // Thai to English events
+                this.startThaiBtn.addEventListener('click', () => this.startRecordingThai());
+                this.stopThaiBtn.addEventListener('click', () => this.stopRecordingThai());
+                this.clearAllBtn.addEventListener('click', () => this.clearAll());
+                this.translateThaiToEnglishBtn.addEventListener('click', () => this.translateThaiToEnglish());
                 this.listenEnglishBtn.addEventListener('click', () => this.speakEnglishText());
-                
-                // ตรวจสอบการเปลี่ยนแปลงของ Thai text เพื่ออัปเดตสถานะปุ่มแปล
-                this.thaiText.addEventListener('input', () => this.updateTranslateButtonState());
-                // ตรวจสอบการเปลี่ยนแปลงของ English text เพื่ออัปเดตสถานะปุ่มอ่านออกเสียง
-                this.englishText.addEventListener('input', () => this.updateListenButtonState());
+                this.thaiText.addEventListener('input', () => this.updateTranslateButtonStates());
+                this.englishText.addEventListener('input', () => this.updateListenButtonStates());
+
+                // English to Thai events
+                this.startEnglishBtn.addEventListener('click', () => this.startRecordingEnglish());
+                this.stopEnglishBtn.addEventListener('click', () => this.stopRecordingEnglish());
+                this.englishListenText.addEventListener('input', () => this.updateTranslateButtonStates());
+                this.thaiTranslatedText.addEventListener('input', () => this.updateListenButtonStates());
+                this.translateEnglishToThaiBtn.addEventListener('click', () => this.translateEnglishToThai());
+                this.listenThaiBtn.addEventListener('click', () => this.speakThaiText());
             }
 
             updateStatus(message, type) {
                 this.statusDiv.innerHTML = message;
-                this.statusDiv.className = 'status'; // Reset classes
+                this.statusDiv.className = 'status';
                 if (type) {
                     this.statusDiv.classList.add(type);
                 }
             }
 
-            updateTranslateButtonState() {
-                this.translateBtn.disabled = !this.thaiText.value.trim() || !this.geminiApiKey;
+            updateTranslateButtonStates() {
+                this.translateThaiToEnglishBtn.disabled = !this.thaiText.value.trim() || !this.geminiApiKey;
+                this.translateEnglishToThaiBtn.disabled = !this.englishListenText.value.trim() || !this.geminiApiKey;
             }
 
-            updateListenButtonState() {
+            updateListenButtonStates() {
                 this.listenEnglishBtn.disabled = !this.englishText.value.trim();
+                this.listenThaiBtn.disabled = !this.thaiTranslatedText.value.trim();
             }
 
-            startRecording() {
+            startRecordingThai() {
                 if (!this.geminiApiKey) {
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     return;
                 }
-                if (this.recognition && !this.isRecording) {
-                    this.recognition.start();
+                if (this.recognitionEnglish && this.isRecordingEnglish) { // Stop English recording if active
+                    this.stopRecordingEnglish();
+                }
+                if (this.recognitionThai && !this.isRecordingThai) {
+                    this.recognitionThai.start();
                 }
             }
 
-            stopRecording() {
-                if (this.recognition && this.isRecording) {
-                    this.recognition.stop();
+            stopRecordingThai() {
+                if (this.recognitionThai && this.isRecordingThai) {
+                    this.recognitionThai.stop();
                 }
-                this.isRecording = false;
-                this.startBtn.disabled = !this.geminiApiKey; // ถ้าไม่มี API Key ปุ่มก็ยังปิดอยู่
-                this.stopBtn.disabled = true;
-                this.startBtn.classList.remove('recording');
+                this.isRecordingThai = false;
+                this.startThaiBtn.disabled = !this.geminiApiKey;
+                this.stopThaiBtn.disabled = true;
+                this.startThaiBtn.classList.remove('recording');
+            }
+
+            startRecordingEnglish() {
+                if (!this.geminiApiKey) {
+                    this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
+                    return;
+                }
+                if (this.recognitionThai && this.isRecordingThai) { // Stop Thai recording if active
+                    this.stopRecordingThai();
+                }
+                if (this.recognitionEnglish && !this.isRecordingEnglish) {
+                    this.recognitionEnglish.start();
+                }
+            }
+
+            stopRecordingEnglish() {
+                if (this.recognitionEnglish && this.isRecordingEnglish) {
+                    this.recognitionEnglish.stop();
+                }
+                this.isRecordingEnglish = false;
+                this.startEnglishBtn.disabled = !this.geminiApiKey;
+                this.stopEnglishBtn.disabled = true;
+                this.startEnglishBtn.classList.remove('recording');
             }
 
             clearAll() {
                 this.thaiText.value = '';
                 this.englishText.value = '';
-                if(this.geminiApiKey) { // หากมี API Key อยู่แล้ว ค่อยแสดงสถานะว่าล้างข้อมูลสำเร็จ
+                this.englishListenText.value = '';
+                this.thaiTranslatedText.value = '';
+
+                if(this.geminiApiKey) {
                     this.updateStatus('ล้างข้อมูลเรียบร้อย', 'success');
-                } else { // ถ้าไม่มี API Key ก็กลับไปสถานะให้ใส่ API Key
+                } else {
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                 }
-                this.updateTranslateButtonState();
-                this.updateListenButtonState();
+                this.updateTranslateButtonStates();
+                this.updateListenButtonStates();
                 
-                if (this.isRecording) {
-                    this.stopRecording();
-                }
-                if (window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                }
+                if (this.isRecordingThai) this.stopRecordingThai();
+                if (this.isRecordingEnglish) this.stopRecordingEnglish();
+                if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
             }
 
-            async translateText() {
-                const text = this.thaiText.value.trim();
-                if (!text) {
-                    this.updateStatus('กรุณากรอกข้อความภาษาไทย', 'error');
-                    this.englishText.value = '';
-                    this.updateListenButtonState();
-                    return;
-                }
+            async translateText(sourceText, sourceLang, targetLang) {
                 if (!this.geminiApiKey) {
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
-                    this.englishText.value = '';
-                    this.updateListenButtonState();
-                    return;
+                    return '';
+                }
+                if (!sourceText.trim()) {
+                    this.updateStatus(`กรุณากรอกข้อความ ${sourceLang} ที่ต้องการแปล`, 'error');
+                    return '';
                 }
 
-                this.updateStatus('กำลังแปลภาษา...', 'processing');
-                this.translateBtn.disabled = true;
-                this.englishText.value = 'Translating...'; // แสดงข้อความกำลังแปล
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`;
+                
+                const prompt = `Translate the following ${sourceLang} text to ${targetLang}. Respond only with the ${targetLang} translation, without any additional comments, prefixes, or explanations, and avoid markdown if possible.
+                
+                ${sourceLang}: "${sourceText}"
+                
+                ${targetLang}:`;
 
                 try {
-                    // *** แก้ไขตรงนี้: เปลี่ยนโมเดลเป็น gemini-1.5-flash ***
-                    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.geminiApiKey}`;
-                    
-                    // ปรับ Prompt ให้ชัดเจนขึ้น
-                    const prompt = `Translate the following Thai text to English. Respond only with the English translation, without any additional comments, prefixes, or explanations, and avoid markdown if possible.
-                    
-                    Thai: "${text}"
-                    
-                    English:`;
-
                     const response = await fetch(API_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: prompt }] }],
                             generationConfig: { 
-                                temperature: 0.2, // สามารถปรับค่านี้ได้ (0.0-1.0) เพื่อควบคุมความคิดสร้างสรรค์ (ต่ำ = ตรงตัว, สูง = สร้างสรรค์)
-                                maxOutputTokens: 200 // จำกัดจำนวน token ของผลลัพธ์
+                                temperature: 0.2,
+                                maxOutputTokens: 200
                             }
                         })
                     });
 
                     if (!response.ok) {
-                           const errorData = await response.json();
-                           // ตรวจสอบ error code จาก Gemini API เพื่อให้ข้อความละเอียดขึ้น
-                           if (errorData.error && errorData.error.status === 'RESOURCE_EXHAUSTED') {
-                                throw new Error('โควต้าการใช้งาน API หมด กรุณาลองใหม่ภายหลัง หรือตรวจสอบการเรียกใช้งาน');
-                           }
-                           throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
+                        const errorData = await response.json();
+                        if (errorData.error && errorData.error.status === 'RESOURCE_EXHAUSTED') {
+                             throw new Error('โควต้าการใช้งาน API หมด กรุณาลองใหม่ภายหลัง');
+                        }
+                        throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
                     }
 
                     const data = await response.json();
                     
                     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-                        let translatedText = data.candidates[0].content.parts[0].text.trim();
-                        // บางครั้ง Gemini อาจจะเพิ่ม "English:" มาให้ ถึงแม้จะสั่งแล้วก็ตาม
-                        if (translatedText.toLowerCase().startsWith('english:')) {
-                            translatedText = translatedText.substring('english:'.length).trim();
+                        let translated = data.candidates[0].content.parts[0].text.trim();
+                        // Clean up potential prefixes from Gemini
+                        if (translated.toLowerCase().startsWith(`${targetLang.toLowerCase()}:`)) {
+                            translated = translated.substring(`${targetLang.toLowerCase()}:`.length).trim();
                         }
-                        this.englishText.value = translatedText;
-                        this.updateStatus('แปลภาษาเสร็จสิ้น', 'success');
-                        this.updateListenButtonState();
-                        this.speakEnglishText(); // เรียกอ่านออกเสียงอัตโนมัติเมื่อแปลเสร็จ
+                        return translated;
                     } else {
-                        // เพิ่มการตรวจสอบกรณีที่โมเดลอาจจะถูก blocked หรือไม่ให้ผลลัพธ์
                         if (data.promptFeedback && data.promptFeedback.blockReason) {
                             throw new Error(`คำร้องขอถูกบล็อก: ${data.promptFeedback.blockReason}. อาจเป็นเพราะเนื้อหาไม่เหมาะสม.`);
                         }
@@ -781,54 +878,119 @@
                         errorMessage = 'โควต้าการใช้งาน API หมด กรุณาลองใหม่ภายหลัง';
                     } else if (error.message.includes('blocked')) {
                         errorMessage = `เกิดข้อผิดพลาด: ${error.message}`;
-                    }
-                    else {
+                    } else {
                         errorMessage = `เกิดข้อผิดพลาด: ${error.message}`;
                     }
                     this.updateStatus(errorMessage, 'error');
-                    this.englishText.value = `Error: ${errorMessage}`;
-                } finally {
-                    this.translateBtn.disabled = !this.thaiText.value.trim() || !this.geminiApiKey; // ให้ปุ่มกลับมาใช้งานได้ถ้ามีข้อความและ API Key
+                    return `Error: ${errorMessage}`;
                 }
+            }
+
+            async translateThaiToEnglish() {
+                this.updateStatus('กำลังแปลภาษาไทยเป็นอังกฤษ...', 'processing');
+                this.translateThaiToEnglishBtn.disabled = true;
+                this.englishText.value = 'Translating...';
+                this.listenEnglishBtn.disabled = true;
+
+                const result = await this.translateText(this.thaiText.value, 'Thai', 'English');
+                this.englishText.value = result;
+
+                if (result && !result.startsWith('Error:')) {
+                    this.updateStatus('แปลภาษาไทยเป็นอังกฤษเสร็จสิ้น', 'success');
+                    this.speakEnglishText(); // อ่านออกเสียงอัตโนมัติเมื่อแปลเสร็จ
+                } else if (result.startsWith('Error:')) {
+                    this.englishText.value = result; // แสดงข้อความ error
+                } else {
+                    this.updateStatus('ไม่มีข้อความให้แปล หรือเกิดข้อผิดพลาด', 'error');
+                }
+                this.updateTranslateButtonStates();
+                this.updateListenButtonStates();
+            }
+
+            async translateEnglishToThai() {
+                this.updateStatus('กำลังแปลภาษาอังกฤษเป็นไทย...', 'processing');
+                this.translateEnglishToThaiBtn.disabled = true;
+                this.thaiTranslatedText.value = 'Translating...';
+                this.listenThaiBtn.disabled = true;
+
+                const result = await this.translateText(this.englishListenText.value, 'English', 'Thai');
+                this.thaiTranslatedText.value = result;
+
+                if (result && !result.startsWith('Error:')) {
+                    this.updateStatus('แปลภาษาอังกฤษเป็นไทยเสร็จสิ้น', 'success');
+                    this.speakThaiText(); // อ่านออกเสียงอัตโนมัติเมื่อแปลเสร็จ
+                } else if (result.startsWith('Error:')) {
+                    this.thaiTranslatedText.value = result; // แสดงข้อความ error
+                } else {
+                    this.updateStatus('ไม่มีข้อความให้แปล หรือเกิดข้อผิดพลาด', 'error');
+                }
+                this.updateTranslateButtonStates();
+                this.updateListenButtonStates();
             }
 
             speakEnglishText() {
                 const text = this.englishText.value.trim();
-                if (!text) {
+                if (!text || text.startsWith('Error:')) {
                     this.updateStatus('ไม่มีข้อความภาษาอังกฤษให้อ่าน', 'info');
                     return;
                 }
 
                 if (window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel(); // หยุดการอ่านเสียงที่กำลังดำเนินอยู่
+                    window.speechSynthesis.cancel();
                 }
 
                 this.speechSynthesisUtterance = new SpeechSynthesisUtterance(text);
-                this.speechSynthesisUtterance.lang = 'en-US'; // ตั้งค่าภาษาเป็นภาษาอังกฤษ
-                // สามารถเลือก voice ได้ถ้าต้องการ
-                // const voices = window.speechSynthesis.getVoices();
-                // this.speechSynthesisUtterance.voice = voices.find(voice => voice.lang === 'en-US');
-
+                this.speechSynthesisUtterance.lang = 'en-US';
+                
                 this.speechSynthesisUtterance.onerror = (event) => {
-                    console.error('Speech synthesis error:', event.error);
-                    this.updateStatus(`ไม่สามารถอ่านออกเสียงได้: ${event.error}`, 'error');
+                    console.error('Speech synthesis error (English):', event.error);
+                    this.updateStatus(`ไม่สามารถอ่านออกเสียงภาษาอังกฤษได้: ${event.error}`, 'error');
                 };
                 this.speechSynthesisUtterance.onstart = () => {
-                    this.updateStatus('กำลังอ่านออกเสียง...', 'processing');
-                    this.listenEnglishBtn.disabled = true; // ปิดปุ่มระหว่างอ่าน
+                    this.updateStatus('กำลังอ่านออกเสียง (อังกฤษ)...', 'processing');
+                    this.listenEnglishBtn.disabled = true;
                 };
                 this.speechSynthesisUtterance.onend = () => {
-                    this.updateStatus('อ่านออกเสียงเสร็จสิ้น', 'success');
-                    this.listenEnglishBtn.disabled = false; // เปิดปุ่มเมื่ออ่านจบ
+                    this.updateStatus('อ่านออกเสียง (อังกฤษ) เสร็จสิ้น', 'success');
+                    this.listenEnglishBtn.disabled = false;
                 };
 
                 window.speechSynthesis.speak(this.speechSynthesisUtterance);
             }
+
+            speakThaiText() {
+                const text = this.thaiTranslatedText.value.trim();
+                if (!text || text.startsWith('Error:')) {
+                    this.updateStatus('ไม่มีข้อความภาษาไทยให้อ่าน', 'info');
+                    return;
+                }
+
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+
+                this.speechSynthesisUtteranceThai = new SpeechSynthesisUtterance(text);
+                this.speechSynthesisUtteranceThai.lang = 'th-TH';
+                
+                this.speechSynthesisUtteranceThai.onerror = (event) => {
+                    console.error('Speech synthesis error (Thai):', event.error);
+                    this.updateStatus(`ไม่สามารถอ่านออกเสียงภาษาไทยได้: ${event.error}`, 'error');
+                };
+                this.speechSynthesisUtteranceThai.onstart = () => {
+                    this.updateStatus('กำลังอ่านออกเสียง (ไทย)...', 'processing');
+                    this.listenThaiBtn.disabled = true;
+                };
+                this.speechSynthesisUtteranceThai.onend = () => {
+                    this.updateStatus('อ่านออกเสียง (ไทย) เสร็จสิ้น', 'success');
+                    this.listenThaiBtn.disabled = false;
+                };
+
+                window.speechSynthesis.speak(this.speechSynthesisUtteranceThai);
+            }
         }
 
-        // เมื่อ DOM โหลดเสร็จ ให้เริ่มต้นการทำงานของ Translator
         document.addEventListener('DOMContentLoaded', () => {
-            new ThaiVoiceTranslator();
+            new BiDirectionalVoiceTranslator();
         });
     </script>
 </body>
