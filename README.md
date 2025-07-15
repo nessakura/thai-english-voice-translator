@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -489,6 +490,7 @@
     <div class="container">
         <h1>🎤 ระบบแปลภาษา (ไทย ↔ อังกฤษ)</h1>
         
+        <!-- Language Switcher -->
         <div class="language-switcher">
             <a href="https://nessakura.github.io/thai-english-voice-translator/" class="nav-btn" id="navEnglish">🇹🇭-🇬🇧</a>
             <a href="https://nessakura.github.io/thai-japan-voice-translator/" class="nav-btn" id="navJapanese">🇹🇭-🇯🇵</a>
@@ -595,7 +597,7 @@
                 this.geminiApiKey = localStorage.getItem('geminiApiKey') || '';
                 this.speechSynthesisUtteranceEnglish = null;
                 this.speechSynthesisUtteranceThai = null;
-                this.currentMode = 'thaiToEnglish'; // Default mode: Thai to English
+                this.currentMode = 'thaiToEnglish'; // Default mode
 
                 this.initializeElements();
                 this.setupGlobalEventListeners();
@@ -663,11 +665,13 @@
                 this.modeEnglishToThaiBtn.addEventListener('click', () => this.switchMode('englishToThai'));
             }
 
+            // New method to highlight the active navigation button
             highlightActiveNavButton() {
                 const navButtons = document.querySelectorAll('.language-switcher .nav-btn');
                 navButtons.forEach(button => {
+                    // Check if the button's href matches the current window's location (URL)
                     if (button.href === window.location.href) {
-                        button.classList.add('active');
+                        button.classList.add('active'); // Add 'active' class to highlight it
                     }
                 });
             }
@@ -833,8 +837,11 @@
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        if (errorData.error && errorData.error.status === 'RESOURCE_EXHAUSTED') {
-                             throw new Error('โควต้าการใช้งาน API หมด กรุณาลองใหม่ภายหลัง');
+                        // Check for specific API error messages related to overloading or resource exhaustion
+                        if (errorData.error) {
+                            if (errorData.error.status === 'RESOURCE_EXHAUSTED' || errorData.error.message.includes('overloaded')) {
+                                throw new Error('โมเดลมีการใช้งานมากเกินไป (Overloaded). กรุณาลองใหม่อีกครั้งในภายหลัง.');
+                            }
                         }
                         throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
                     }
@@ -859,8 +866,8 @@
                     let errorMessage = 'ไม่สามารถแปลภาษาได้';
                     if (error.message.includes('API key not valid')) {
                         errorMessage = 'API Key ไม่ถูกต้อง กรุณาตรวจสอบและใส่ใหม่';
-                    } else if (error.message.includes('Quota') || error.message.includes('โควต้า')) {
-                        errorMessage = 'โควต้าการใช้งาน API หมด กรุณาลองใหม่ภายหลัง';
+                    } else if (error.message.includes('Quota') || error.message.includes('โควต้า') || error.message.includes('Overloaded')) {
+                        errorMessage = `เกิดข้อผิดพลาด: ${error.message}`; // Use the specific message from the thrown error
                     } else if (error.message.includes('blocked')) {
                         errorMessage = `เกิดข้อผิดพลาด: ${error.message}`;
                     } else {
@@ -915,7 +922,7 @@
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     return;
                 }
-                if (this.isRecordingEnglish) { this.stopRecordingEnglish(); }
+                if (this.isRecordingEnglish) { this.stopRecordingEnglish(); } // Stop other recording if active
                 if (this.recognitionThai && !this.isRecordingThai) {
                     this.recognitionThai.start();
                 }
@@ -1003,7 +1010,7 @@
                 }
 
                 this.speechSynthesisUtteranceEnglish = new SpeechSynthesisUtterance(text);
-                this.speechSynthesisUtteranceEnglish.lang = 'en-US'; // English (United States)
+                this.speechSynthesisUtteranceEnglish.lang = 'en-US';
                 
                 this.speechSynthesisUtteranceEnglish.onerror = (event) => {
                     console.error('Speech synthesis error (English):', event.error);
@@ -1029,7 +1036,7 @@
                     this.recognitionEnglish = new SpeechRecognition();
                     this.recognitionEnglish.continuous = true;
                     this.recognitionEnglish.interimResults = true;
-                    this.recognitionEnglish.lang = 'en-US'; // English (United States)
+                    this.recognitionEnglish.lang = 'en-US';
 
                     this.recognitionEnglish.onstart = () => this.onEnglishRecognitionStart();
                     this.recognitionEnglish.onresult = (event) => this.onEnglishRecognitionResult(event);
@@ -1053,7 +1060,7 @@
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     return;
                 }
-                if (this.isRecordingThai) { this.stopRecordingThai(); }
+                if (this.isRecordingThai) { this.stopRecordingThai(); } // Stop other recording if active
                 if (this.recognitionEnglish && !this.isRecordingEnglish) {
                     this.recognitionEnglish.start();
                 }
