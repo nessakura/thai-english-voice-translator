@@ -68,6 +68,51 @@
             }
         }
 
+        /* Language Switcher Navigation */
+        .language-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px; /* Space below switcher */
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Subtle separator */
+        }
+
+        .nav-btn {
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #555;
+            background: #e2e8f0;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px; /* Ensure buttons have a minimum width */
+            text-align: center;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+            background: #dce3ec;
+        }
+
+        /* Active button style */
+        .nav-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.25);
+            cursor: default; /* Not clickable if active */
+            transform: none; /* No hover effect on active */
+            pointer-events: none; /* Disable clicks on active */
+        }
+
+
         .section {
             margin-bottom: 25px; /* Reduced margin between sections */
             padding: 20px; /* Adjusted padding */
@@ -444,6 +489,13 @@
     <div class="container">
         <h1>🎤 ระบบแปลภาษา (ไทย ↔ อังกฤษ)</h1>
         
+        <div class="language-switcher">
+            <a href="https://nessakura.github.io/thai-english-voice-translator/" class="nav-btn" id="navEnglish">🇹🇭-🇬🇧</a>
+            <a href="https://nessakura.github.io/thai-japan-voice-translator/" class="nav-btn" id="navJapanese">🇹🇭-🇯🇵</a>
+            <a href="https://nessakura.github.io/thai-korea-voice-translator/" class="nav-btn" id="navKorean">🇹🇭-🇰🇷</a>
+            <a href="https://nessakura.github.io/thai-china-voice-translator/" class="nav-btn" id="navChinese">🇹🇭-🇨🇳</a>
+        </div>
+
         <div class="api-setup" id="apiSetupSection">
             <h2><span class="icon">🔑</span> ตั้งค่า Gemini API Key</h2>
             <div class="warning">
@@ -477,15 +529,15 @@
 
         <div class="mode-selector">
             <button class="btn btn-primary active" id="modeThaiToEnglishBtn">
-                ไทย ➡️ อังกฤษ
+                🇹🇭 ➡️ 🇬🇧
             </button>
             <button class="btn btn-primary" id="modeEnglishToThaiBtn">
-                อังกฤษ ➡️ ไทย
+                🇬🇧 ➡️ 🇹🇭
             </button>
         </div>
 
         <div class="section" id="thaiToEnglishSection">
-            <h2><span class="icon">ไทย ➡️ อังกฤษ</span> ไทย ➡️ อังกฤษ</h2>
+            <h2><span class="icon">🇹🇭➡️🇬🇧</span> ไทย ➡️ อังกฤษ</h2>
             <div class="voice-controls">
                 <button class="btn btn-primary" id="startThaiBtn" disabled>
                     <span>🎤</span> เริ่มพูด (ไทย)
@@ -513,7 +565,7 @@
         </div>
 
         <div class="section result-section" id="englishToThaiSection" style="display: none;">
-            <h2><span class="icon">อังกฤษ ➡️ ไทย</span> อังกฤษ ➡️ ไทย</h2>
+            <h2><span class="icon">🇬🇧➡️🇹🇭</span> อังกฤษ ➡️ ไทย</h2>
             <div class="voice-controls">
                 <button class="btn btn-info" id="startEnglishBtn" disabled>
                     <span>🎙️</span> เริ่มพูด (อังกฤษ)
@@ -543,7 +595,7 @@
                 this.geminiApiKey = localStorage.getItem('geminiApiKey') || '';
                 this.speechSynthesisUtteranceEnglish = null;
                 this.speechSynthesisUtteranceThai = null;
-                this.currentMode = 'thaiToEnglish'; // Default mode
+                this.currentMode = 'thaiToEnglish'; // Default mode: Thai to English
 
                 this.initializeElements();
                 this.setupGlobalEventListeners();
@@ -551,6 +603,7 @@
                 this.setupEnglishToThaiMode();
                 this.checkApiKeyStatus();
                 this.switchMode(this.currentMode); // Set initial display mode
+                this.highlightActiveNavButton(); // Highlight the current page's button
             }
 
             initializeElements() {
@@ -608,6 +661,15 @@
                 // Mode selector event listeners
                 this.modeThaiToEnglishBtn.addEventListener('click', () => this.switchMode('thaiToEnglish'));
                 this.modeEnglishToThaiBtn.addEventListener('click', () => this.switchMode('englishToThai'));
+            }
+
+            highlightActiveNavButton() {
+                const navButtons = document.querySelectorAll('.language-switcher .nav-btn');
+                navButtons.forEach(button => {
+                    if (button.href === window.location.href) {
+                        button.classList.add('active');
+                    }
+                });
             }
 
             switchMode(mode) {
@@ -853,7 +915,7 @@
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     return;
                 }
-                if (this.isRecordingEnglish) { this.stopRecordingEnglish(); } // Stop other recording if active
+                if (this.isRecordingEnglish) { this.stopRecordingEnglish(); }
                 if (this.recognitionThai && !this.isRecordingThai) {
                     this.recognitionThai.start();
                 }
@@ -941,7 +1003,7 @@
                 }
 
                 this.speechSynthesisUtteranceEnglish = new SpeechSynthesisUtterance(text);
-                this.speechSynthesisUtteranceEnglish.lang = 'en-US';
+                this.speechSynthesisUtteranceEnglish.lang = 'en-US'; // English (United States)
                 
                 this.speechSynthesisUtteranceEnglish.onerror = (event) => {
                     console.error('Speech synthesis error (English):', event.error);
@@ -967,7 +1029,7 @@
                     this.recognitionEnglish = new SpeechRecognition();
                     this.recognitionEnglish.continuous = true;
                     this.recognitionEnglish.interimResults = true;
-                    this.recognitionEnglish.lang = 'en-US';
+                    this.recognitionEnglish.lang = 'en-US'; // English (United States)
 
                     this.recognitionEnglish.onstart = () => this.onEnglishRecognitionStart();
                     this.recognitionEnglish.onresult = (event) => this.onEnglishRecognitionResult(event);
@@ -991,7 +1053,7 @@
                     this.updateStatus('กรุณาใส่ Gemini API Key ก่อนใช้งาน', 'error');
                     return;
                 }
-                if (this.isRecordingThai) { this.stopRecordingThai(); } // Stop other recording if active
+                if (this.isRecordingThai) { this.stopRecordingThai(); }
                 if (this.recognitionEnglish && !this.isRecordingEnglish) {
                     this.recognitionEnglish.start();
                 }
